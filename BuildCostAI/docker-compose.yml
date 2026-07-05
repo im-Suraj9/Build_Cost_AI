@@ -1,0 +1,70 @@
+version: '3.9'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: buildcost-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: construction_estimator
+    networks:
+      - buildcost-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: buildcost-backend
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/construction_estimator
+      - JWT_SECRET=${JWT_SECRET:-change_this_secret_in_production}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - AI_API_URL=http://ai-service:8000
+      - EMAIL_USER=${EMAIL_USER:-}
+      - EMAIL_PASS=${EMAIL_PASS:-}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    networks:
+      - buildcost-net
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: buildcost-ai
+    restart: unless-stopped
+    ports:
+      - '8000:8000'
+    networks:
+      - buildcost-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: buildcost-frontend
+    restart: unless-stopped
+    ports:
+      - '3000:80'
+    depends_on:
+      - backend
+    networks:
+      - buildcost-net
+
+volumes:
+  mongo_data:
+
+networks:
+  buildcost-net:
+    driver: bridge
