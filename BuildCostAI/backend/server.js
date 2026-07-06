@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/admin');
 const chatRoutes = require('./routes/chat');
 
 const app = express();
+app.set("trust proxy",1)
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: process.env.FRONTEND_URL || 'http://localhost:5173', methods: ['GET', 'POST'] }
